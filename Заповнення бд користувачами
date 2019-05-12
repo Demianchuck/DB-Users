@@ -1,0 +1,72 @@
+using System;
+using System.Configuration;
+using System.Data;
+using System.Data.SqlClient;
+using System.Data.Common;
+using System.Text;
+
+namespace adonet1
+{
+    class Program
+    {
+        const int KEY = 10;
+        static void Main(string[] args)
+        {
+            string connectionString = ConfigurationManager.ConnectionStrings["UsersDatabaseConnection"].ConnectionString;
+            string dataProvider = ConfigurationManager.ConnectionStrings["UsersDatabaseConnection"].ProviderName;
+            DbProviderFactory dataFactory = DbProviderFactories.GetFactory(dataProvider);
+            using (DbConnection connection = dataFactory.CreateConnection())
+            {
+                connection.ConnectionString = connectionString;
+                connection.Open();
+                Console.WriteLine("DB connection was opened\n");
+                DbCommand command = connection.CreateCommand();
+                command.Connection = connection;
+                CreateDatabase(command);
+                CreateTable(command);
+                InsertUserIntoDatabase(command);
+            }
+            Console.WriteLine("DB connection was closed\n");
+        }
+//  Створення бази даних
+        static void CreateDatabase(DbCommand command)
+        {
+            command.CommandText = "CREATE DATABASE StoreUsers;";
+            command.ExecuteNonQuery();
+        }
+//Створення таблиці користувачів
+        static void CreateTable(DbCommand command)
+        {
+            command.CommandText = "USE StoreUsers; CREATE TABLE Users (Id INT IDENTITY NOT NULL, Login NVARCHAR(10) NOT NULL, Password NVARCHAR(10) NOT NULL, FirstName NVARCHAR(100) NOT NULL, LastName NVARCHAR(100) NOT NULL, UNIQUE (Id), PRIMARY KEY(Id));";
+            command.ExecuteNonQuery();
+        }     
+//Заповнення бази даних користувачів
+//Підєднати до кнопки зареєструватись!!!!!!!!!!!!!!!!!!!!!!!!!
+static void InsertUserIntoDatabase(DbCommand command)
+        {
+            Console.Write("Enter your Login: ");
+            string login = Console.ReadLine();
+            Console.Write("Enter your Password: ");
+            StringBuilder pass = new StringBuilder(Console.ReadLine());
+            string password = CodePass(pass);
+            Console.Write("Enter your FirstName: ");
+            string fName = Console.ReadLine();
+            Console.Write("Enter your LastName: ");
+            string lName = Console.ReadLine();
+            command.CommandText = $"USE StoreUsers; INSERT INTO Users (Login, Password, FirstName, LastName) " +
+                $"VALUES ('{login}', '{password}', '{fName}', '{lName}');";
+            int inserted = command.ExecuteNonQuery();
+          //  Console.WriteLine($"Додано користувача");
+        }
+        
+        //Шифрування паролю для бази даних
+        static string CodePass(StringBuilder password)
+        {
+            for (int i = 0; i < password.Length; ++i)
+            {
+                password[i] = (char)((int)password[i] + KEY);
+            }
+            return password.ToString();
+        }
+    }
+}
